@@ -31,7 +31,7 @@ export function SettingsDialog({ isOpen, onClose, onRunArchive }: SettingsDialog
 
   const handleExport = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/export')
+      const res = await fetch('/api/export')
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -51,7 +51,7 @@ export function SettingsDialog({ isOpen, onClose, onRunArchive }: SettingsDialog
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string)
-        const res = await fetch('http://localhost:3000/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        const res = await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
         if (res.ok) { toast("Data Restored", "success"); setTimeout(() => window.location.reload(), 1000); }
       } catch (e) { toast("Import Failed", "error"); }
     }

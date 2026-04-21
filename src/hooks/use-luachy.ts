@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../components/ui/ToastProvider'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = '/api'
 
 export function useLuachy() {
   const [memos, setMemos] = useState<any[]>([])

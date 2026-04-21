@@ -180,7 +180,7 @@ export default function App() {
 
             {activeView === 'archive' && (
               <ArchiveView 
-                API_URL="http://localhost:3000/api"
+                API_URL="/api"
                 onRefresh={luachy.refresh}
                 onBack={() => setActiveView('focus')}
               />

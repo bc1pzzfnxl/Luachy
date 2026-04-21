@@ -150,7 +150,7 @@ export function MemoCard({ memo, cards = [], onDelete, onUpdate, onBacklinkClick
               <div className={cn("grid gap-3 mt-2", memo.images.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                 {memo.images.map((img: string, i: number) => (
                   <div key={i} className="relative group/img rounded-xl overflow-hidden border bg-muted cursor-zoom-in aspect-video shadow-sm" onClick={(e) => { e.stopPropagation(); setFullImage(img); }}>
-                    <img src={`http://localhost:3000/assets/${img}`} className="w-full h-full object-cover transition-transform group-hover/img:scale-105" />
+                    <img src={`/assets/${img}`} className="w-full h-full object-cover transition-transform group-hover/img:scale-105" />
                   </div>
                 ))}
               </div>
@@ -169,7 +169,7 @@ export function MemoCard({ memo, cards = [], onDelete, onUpdate, onBacklinkClick
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-8">
            <div className="absolute inset-0 bg-white/90 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setFullImage(null)} />
            <div className="relative max-w-5xl max-h-full flex flex-col items-center animate-in zoom-in-95 duration-200">
-              <img src={`http://localhost:3000/assets/${fullImage}`} className="rounded-2xl shadow-xl object-contain max-h-[85vh] border" />
+              <img src={`/assets/${fullImage}`} className="rounded-2xl shadow-xl object-contain max-h-[85vh] border" />
               <button onClick={() => setFullImage(null)} className="mt-6 p-4 bg-black/5 hover:bg-black/10 text-foreground rounded-full transition-all border backdrop-blur-md"><X size={24} /></button>
            </div>
         </div>

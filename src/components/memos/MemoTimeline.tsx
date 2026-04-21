@@ -258,7 +258,7 @@ export function MemoTimeline({
                 <div className="flex gap-3 p-3 bg-muted/30 border-t border-border/50">
                   {pendingImages.map((img, i) => (
                     <div key={i} className="relative group/img w-16 h-16 rounded-xl overflow-hidden border border-border/50">
-                      <img src={`http://localhost:3000/assets/${img}`} className="w-full h-full object-cover" />
+                      <img src={`/assets/${img}`} className="w-full h-full object-cover" />
                       <button 
                         onClick={() => setPendingImages(prev => prev.filter((_, idx) => idx !== i))} 
                         className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
