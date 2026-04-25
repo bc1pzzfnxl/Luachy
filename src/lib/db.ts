@@ -9,12 +9,16 @@ const client = postgres(connectionString, { prepare: false });
 export const db = drizzle(client, { schema });
 
 export const initDb = async () => {
-  const cols = await db.select().from(schema.columns);
-  if (cols.length === 0) {
-    await db.insert(schema.columns).values([
-      { name: 'To Do', position: 0 },
-      { name: 'In Progress', position: 1 },
-      { name: 'Done', position: 2 }
-    ]);
+  try {
+    const cols = await db.select().from(schema.columns);
+    if (cols.length === 0) {
+      await db.insert(schema.columns).values([
+        { name: 'To Do', position: 0 },
+        { name: 'In Progress', position: 1 },
+        { name: 'Done', position: 2 }
+      ]);
+    }
+  } catch (e) {
+    console.error("Database initialization check failed:", e);
   }
 };

@@ -25,7 +25,18 @@ export function CardDetailDialog({ card, memos, isOpen, onClose, onUpdate, onSel
   const [priority, setPriority] = useState(4)
   const [dueDate, setDueDate] = useState('')
   const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>('')
+  const [selectedDay, setSelectedDay] = useState<number>(0)
   const [isSaved, setIsSaved] = useState(false)
+
+  const DAYS = [
+    { id: 1, label: 'Mon' },
+    { id: 2, label: 'Tue' },
+    { id: 3, label: 'Wed' },
+    { id: 4, label: 'Thu' },
+    { id: 5, label: 'Fri' },
+    { id: 6, label: 'Sat' },
+    { id: 0, label: 'Sun' },
+  ]
 
   useEffect(() => {
     if (card && isOpen) {
@@ -34,6 +45,8 @@ export function CardDetailDialog({ card, memos, isOpen, onClose, onUpdate, onSel
       setPriority(card.priority || 4)
       setDueDate(card.due_date ? card.due_date.split('T')[0] : '')
       setRecurrence(card.recurrence || '')
+      const day = card.due_date ? new Date(card.due_date).getDay() : new Date().getDay()
+      setSelectedDay(day)
       setIsSaved(false)
     }
   }, [card, isOpen])
@@ -41,11 +54,20 @@ export function CardDetailDialog({ card, memos, isOpen, onClose, onUpdate, onSel
   if (!card || !isOpen) return null
 
   const handleSave = async () => {
+    let finalDueDate = dueDate || null
+    if (recurrence === 'weekly' && !dueDate) {
+      const d = new Date()
+      const currentDay = d.getDay()
+      const diff = selectedDay - currentDay
+      d.setDate(d.getDate() + diff)
+      finalDueDate = d.toISOString().split('T')[0]
+    }
+
     await onUpdate(card.id, {
       title,
       description,
       priority,
-      due_date: dueDate || null,
+      due_date: finalDueDate,
       recurrence: recurrence || null
     })
     setIsSaved(true)
@@ -125,6 +147,23 @@ export function CardDetailDialog({ card, memos, isOpen, onClose, onUpdate, onSel
                   </button>
                 ))}
              </div>
+             
+             {recurrence === 'weekly' && (
+               <div className="flex gap-1.5 flex-wrap mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                 {DAYS.map((day) => (
+                   <button
+                     key={day.id}
+                     onClick={() => setSelectedDay(day.id)}
+                     className={cn(
+                       "flex-1 min-w-[50px] py-1.5 rounded-lg border text-[10px] font-bold uppercase transition-all",
+                       selectedDay === day.id ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-muted-foreground hover:bg-muted"
+                     )}
+                   >
+                     {day.label}
+                   </button>
+                 ))}
+               </div>
+             )}
           </div>
 
           <div className="flex flex-col gap-3">

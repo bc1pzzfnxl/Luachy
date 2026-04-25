@@ -28,13 +28,20 @@ interface DailyFocusProps {
 }
 
 export function DailyFocus({ memos, cards, columns, stats = {}, onUpdateMemo, onDeleteMemo, onToggleTask, onBacklinkClick, onViewStats }: DailyFocusProps) {
-  const todayStr = new Date().toISOString().split('T')[0]
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split('T')[0]
 
   const doneColumn = useMemo(() => columns.find(c => c.name === 'Done'), [columns])
   const todoColumn = useMemo(() => columns.find(c => c.name === 'To Do'), [columns])
 
   const todayMemos = useMemo(() => {
-    return memos.filter(m => m.created_at?.split('T')[0] === todayStr && !m.archived)
+    return memos.filter(m => {
+      if (!m.created_at || m.archived) return false
+      const d = new Date(m.created_at)
+      d.setHours(0, 0, 0, 0)
+      return d.toISOString().split('T')[0] === todayStr
+    })
   }, [memos, todayStr])
 
   const todayCards = useMemo(() => {
@@ -43,13 +50,21 @@ export function DailyFocus({ memos, cards, columns, stats = {}, onUpdateMemo, on
     
     return cards.filter(c => {
       if (c.archived) return false
-      if (!c.recurrence) return c.due_date?.split('T')[0] === todayStr
+      
       if (c.recurrence === 'daily') return true
+      
       if (c.recurrence === 'weekly') {
         const dateToCompare = c.due_date || c.created_at
-        return dateToCompare && new Date(dateToCompare).getDay() === currentDay
+        if (!dateToCompare) return false
+        // Compare only the day of the week
+        return new Date(dateToCompare).getDay() === currentDay
       }
-      return false
+
+      // One-time tasks
+      if (!c.due_date) return false
+      const d = new Date(c.due_date)
+      d.setHours(0, 0, 0, 0)
+      return d.toISOString().split('T')[0] === todayStr
     })
   }, [cards, todayStr])
 

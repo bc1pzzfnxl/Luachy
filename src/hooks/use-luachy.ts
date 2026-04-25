@@ -38,15 +38,43 @@ export function useLuachy() {
         safeJson(statsRes),
         safeJson(kanbanStatsRes)
       ])
+
+      // Robust date normalization
+      const normalizeDate = (d: any) => {
+        if (!d) return null
+        try {
+          const date = new Date(d)
+          return isNaN(date.getTime()) ? null : date.toISOString()
+        } catch (e) { return null }
+      }
       
-      setMemos(memosData || [])
-      setColumns(colsData || [])
-      setCards(cardsData || [])
+      const normalizedMemos = (memosData || []).map((m: any) => ({
+        ...m,
+        created_at: normalizeDate(m.created_at)
+      }))
+
+      const normalizedCards = (cardsData || []).map((c: any) => ({
+        ...c,
+        column_id: Number(c.column_id),
+        priority: Number(c.priority),
+        created_at: normalizeDate(c.created_at),
+        due_date: normalizeDate(c.due_date)
+      }))
+      
+      setMemos(normalizedMemos)
+      setColumns((colsData || []).map((col: any) => ({ ...col, id: Number(col.id) })))
+      setCards(normalizedCards)
       setKanbanStats(kanbanData)
       
       const statsMap: Record<string, number> = {}
       if (Array.isArray(statsData)) {
-        statsData.forEach((s: any) => { if (s && s.date) statsMap[s.date] = s.count })
+        statsData.forEach((s: any) => { 
+          if (s && s.date) {
+            // Ensure key is just YYYY-MM-DD
+            const key = s.date.split('T')[0]
+            statsMap[key] = Number(s.count) 
+          } 
+        })
       }
       setStats(statsMap)
     } catch (err) {

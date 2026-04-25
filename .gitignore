@@ -1,5 +1,6 @@
 # dependencies (bun install)
 node_modules
+bun.lockb
 
 # output
 out
@@ -12,23 +13,33 @@ coverage
 
 # logs
 logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+*.log
+report.[0-9]*
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
 
 # caches
 .eslintcache
 .cache
 *.tsbuildinfo
 
-# IntelliJ based IDEs
+# IDEs
 .idea
+.vscode
+.zed
 
-# Finder (MacOS) folder config
+# OS files
 .DS_Store
+Thumbs.db
+
+# Database (Postgres data is in volume, keep local db junk out)
+*.sqlite
+*.db
+*.db-journal
+
+# Project specific
+.gemini
+assets/

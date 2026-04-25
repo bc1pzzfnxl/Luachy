@@ -29,8 +29,19 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
   const [priority, setPriority] = useState(4)
   const [dueDate, setDueDate] = useState('')
   const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>('')
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay())
   const { toast } = useToast()
   const notifiedRef = useRef(false)
+
+  const DAYS = [
+    { id: 1, label: 'Mon' },
+    { id: 2, label: 'Tue' },
+    { id: 3, label: 'Wed' },
+    { id: 4, label: 'Thu' },
+    { id: 5, label: 'Fri' },
+    { id: 6, label: 'Sat' },
+    { id: 0, label: 'Sun' },
+  ]
 
   useEffect(() => {
     if (isOpen) {
@@ -53,12 +64,23 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
 
   const handleFinish = () => {
     if (!target.trim() || !selectedAction) return
+    
+    // For weekly, we use a reference date that matches the selected day if no date is picked
+    let finalDueDate = dueDate || undefined
+    if (recurrence === 'weekly' && !dueDate) {
+      const d = new Date()
+      const currentDay = d.getDay()
+      const diff = selectedDay - currentDay
+      d.setDate(d.getDate() + diff)
+      finalDueDate = d.toISOString().split('T')[0]
+    }
+
     onCreateTask(
       `${selectedAction.label} : ${target.trim()}`, 
       selectedAction.color, 
       selectedAction.id, 
       priority, 
-      dueDate || undefined,
+      finalDueDate,
       description.trim() || undefined,
       recurrence || undefined
     )
@@ -98,7 +120,7 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
           {step === 1 && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
               <h4 className="text-xl font-serif font-medium text-center text-foreground">Select an action</h4>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
                 {ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -157,7 +179,7 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
           )}
 
           {step === 3 && (
-            <div className="flex flex-col gap-8 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex flex-col gap-8 animate-in slide-in-from-right-4 duration-200 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
               <div className="flex flex-col gap-4">
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Priority</h4>
                 <div className="grid grid-cols-4 gap-3">
@@ -176,19 +198,6 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
                       <span className="text-xs font-semibold">{p.label}</span>
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Due Date (Optional)</h4>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input 
-                    type="date"
-                    className="w-full p-4 pl-12 rounded-xl border bg-muted/20 outline-none focus:ring-1 focus:ring-primary transition-all text-sm font-medium shadow-sm"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
                 </div>
               </div>
 
@@ -214,6 +223,41 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
                 </div>
               </div>
 
+              {recurrence === 'weekly' && (
+                <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Day</h4>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DAYS.map((day) => (
+                      <button
+                        key={day.id}
+                        onClick={() => setSelectedDay(day.id)}
+                        className={cn(
+                          "flex-1 min-w-[50px] py-2 rounded-lg border text-[10px] font-bold uppercase transition-all",
+                          selectedDay === day.id ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recurrence === '' && (
+                <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Due Date (Optional)</h4>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <input 
+                      type="date"
+                      className="w-full p-4 pl-12 rounded-xl border bg-muted/20 outline-none focus:ring-1 focus:ring-primary transition-all text-sm font-medium shadow-sm"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="mt-auto pt-6 flex gap-3">
                 <button onClick={() => setStep(2)} className="flex-1 py-3.5 rounded-xl border font-semibold text-sm hover:bg-muted transition-colors flex items-center justify-center gap-2">
                   <ChevronLeft size={16}/> Back
@@ -224,6 +268,7 @@ export function GuidedTaskBuilder({ isOpen, onClose, onCreateTask, initialTarget
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

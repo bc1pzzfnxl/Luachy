@@ -6,7 +6,7 @@ import { mkdirSync } from 'fs';
 
 console.log("\n-----------------------------------------");
 console.log("LUACHY MINIMALIST SERVER STARTING...");
-console.log("Database: PostgreSQL (Drizzle)");
+console.log("Database: PostgreSQL (Docker)");
 console.log("Port: 3000");
 console.log("-----------------------------------------\n");
 
@@ -61,7 +61,11 @@ const server = Bun.serve({
         const allAttachments = await db.select().from(schema.attachments);
         const rows = allMemos.map(m => {
           const imgs = allAttachments.filter(a => a.memo_id === m.id).map(a => a.filename);
-          return { ...m, images: imgs };
+          return { 
+            ...m, 
+            images: imgs,
+            created_at: m.created_at ? new Date(m.created_at).toISOString() : null 
+          };
         });
         return Response.json(rows, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 500, headers }); }
@@ -76,7 +80,11 @@ const server = Bun.serve({
         const allAttachments = await db.select().from(schema.attachments);
         const rows = searchMemos.map(m => {
           const imgs = allAttachments.filter(a => a.memo_id === m.id).map(a => a.filename);
-          return { ...m, images: imgs };
+          return { 
+            ...m, 
+            images: imgs,
+            created_at: m.created_at ? new Date(m.created_at).toISOString() : null 
+          };
         });
         return Response.json(rows, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 500, headers }); }
@@ -85,22 +93,29 @@ const server = Bun.serve({
     if (url.pathname === "/api/memos" && req.method === "POST") {
       try {
         const { content, images } = await req.json();
-        const inserted = await db.insert(schema.memos).values({ content }).returning({ id: schema.memos.id });
+        const inserted = await db.insert(schema.memos).values({ 
+          content,
+          created_at: new Date(),
+          updated_at: new Date()
+        }).returning({ id: schema.memos.id });
         const memoId = inserted[0].id;
         if (images && Array.isArray(images)) {
           for (const img of images) {
-             await db.insert(schema.attachments).values({ memo_id: memoId, filename: img });
+             await db.insert(schema.attachments).values({ memo_id: memoId, filename: img, created_at: new Date() });
           }
         }
         return Response.json({ success: true, id: memoId }, { headers });
-      } catch (err: any) { return Response.json({ error: err.message }, { status: 400, headers }); }
+      } catch (err: any) { 
+        console.error("Create Memo Error:", err);
+        return Response.json({ error: err.message }, { status: 400, headers }); 
+      }
     }
 
     if (url.pathname.startsWith("/api/memos/") && req.method === "PATCH") {
       try {
         const id = parseInt(url.pathname.split("/")[3]);
         const { content } = await req.json();
-        await db.update(schema.memos).set({ content }).where(eq(schema.memos.id, id));
+        await db.update(schema.memos).set({ content, updated_at: new Date() }).where(eq(schema.memos.id, id));
         return Response.json({ success: true }, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 400, headers }); }
     }
@@ -156,7 +171,8 @@ const server = Bun.serve({
           priority: priority ?? 4,
           due_date: dueDate ? new Date(dueDate) : null,
           description: description ?? null,
-          recurrence: recurrence ?? null
+          recurrence: recurrence ?? null,
+          created_at: new Date()
         });
         return Response.json({ success: true }, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 400, headers }); }
@@ -230,10 +246,11 @@ const server = Bun.serve({
         const res = await db.execute(sql`
           SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count 
           FROM memos 
-          GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD') 
+          GROUP BY date 
           ORDER BY date DESC
         `);
-        return Response.json(res, { headers });
+        const data = (res as any).rows || res;
+        return Response.json(data, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 500, headers }); }
     }
 
@@ -245,16 +262,23 @@ const server = Bun.serve({
         const doneId = doneColRes[0]?.id;
         const doneRes = await db.select({ count: sql`count(*)` }).from(schema.cards).where(and(eq(schema.cards.column_id, doneId), eq(schema.cards.archived, 0)));
         const completed = Number((doneRes[0] as any).count || 0);
-        const priorities = await db.execute(sql`SELECT priority, COUNT(*) as c FROM cards WHERE archived = 0 GROUP BY priority`);
-        const actions = await db.execute(sql`SELECT action_type, COUNT(*) as c FROM cards WHERE archived = 0 GROUP BY action_type`);
-        const history = await db.execute(sql`
+        
+        const prioRes = await db.execute(sql`SELECT priority, COUNT(*) as c FROM cards WHERE archived = 0 GROUP BY priority`);
+        const priorities = (prioRes as any).rows || prioRes;
+
+        const actRes = await db.execute(sql`SELECT action_type, COUNT(*) as c FROM cards WHERE archived = 0 GROUP BY action_type`);
+        const actions = (actRes as any).rows || actRes;
+        
+        const histRes = await db.execute(sql`
           SELECT TO_CHAR(due_date, 'YYYY-MM-DD') as date, COUNT(*) as count 
           FROM cards 
           WHERE column_id = ${doneId} AND archived = 0 
           AND due_date >= CURRENT_DATE - INTERVAL '30 days'
-          GROUP BY TO_CHAR(due_date, 'YYYY-MM-DD')
+          GROUP BY date
           ORDER BY date ASC
         `);
+        const history = (histRes as any).rows || histRes;
+
         return Response.json({ total, completed, priorities, actions, history }, { headers });
       } catch (err: any) { return Response.json({ error: err.message }, { status: 500, headers }); }
     }

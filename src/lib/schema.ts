@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const columns = pgTable('columns', {
@@ -20,7 +20,7 @@ export const cards = pgTable('cards', {
   recurrence: text('recurrence'), // null, 'daily', 'weekly'
   archived: integer('archived').default(0), // 0 or 1
   reminded: integer('reminded').default(0),
-  created_at: timestamp('created_at').defaultNow(),
+  created_at: timestamp('created_at'),
 });
 
 export const memos = pgTable('memos', {
@@ -28,8 +28,8 @@ export const memos = pgTable('memos', {
   content: text('content').notNull(),
   card_id: integer('card_id').references(() => cards.id),
   archived: integer('archived').default(0),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
+  created_at: timestamp('created_at'),
+  updated_at: timestamp('updated_at'),
 });
 
 export const attachments = pgTable('attachments', {
@@ -37,7 +37,7 @@ export const attachments = pgTable('attachments', {
   memo_id: integer('memo_id').references(() => memos.id, { onDelete: 'cascade' }),
   filename: text('filename').notNull(),
   type: text('type'),
-  created_at: timestamp('created_at').defaultNow(),
+  created_at: timestamp('created_at'),
 });
 
 export const cardsRelations = relations(cards, ({ one }) => ({

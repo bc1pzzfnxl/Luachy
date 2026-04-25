@@ -16,7 +16,7 @@
 ---
 
 <div align="center">
-  <img src="./assets/hero-screenshot.png" alt="Luachy Dashboard" width="800" style="border-radius: 10px; border: 1px solid #333;" />
+  <img src="./demo.gif" alt="Luachy Demo" width="800" style="border-radius: 10px; border: 1px solid #333;" />
 </div>
 
 ## ✨ Features

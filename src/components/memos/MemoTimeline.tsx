@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { 
   Plus, ShoppingCart, Lightbulb, 
-  PenTool, BadgeEuro, Zap, CalendarDays, Search, X, Loader2, StickyNote, Download, Home, Church
+  PenTool, BadgeEuro, Zap, CalendarDays, Search, X, Loader2, StickyNote, Download, Home, Church, GraduationCap
 } from 'lucide-react'
 import { MemoCard } from './MemoCard'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,7 @@ const QUICK_PREFIXES = [
   { label: 'Buy', value: 'Buy : ', icon: ShoppingCart },
   { label: 'Sell', value: 'Sell : ', icon: BadgeEuro },
   { label: 'Learn', value: 'Learn : ', icon: Lightbulb },
+  { label: 'School', value: 'School : ', icon: GraduationCap },
   { label: 'Write', value: 'Write : ', icon: PenTool },
   { label: 'Idea', value: 'Idea : ', icon: Zap },
   { label: 'Install', value: 'Install : ', icon: Download },
@@ -65,10 +66,15 @@ export function MemoTimeline({
     const groups: Record<string, any[]> = {}
     const memoArray = Array.isArray(memos) ? memos : []
     if (memoArray.length === 0) return groups
-    const sorted = [...memoArray].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+    const sorted = [...memoArray].sort((a, b) => {
+      const da = new Date(a.created_at || 0).getTime()
+      const db = new Date(b.created_at || 0).getTime()
+      return db - da
+    })
     sorted.forEach(memo => {
-      if (!memo || !memo.created_at) return
-      const d = new Date(memo.created_at)
+      if (!memo) return
+      const d = new Date(memo.created_at || Date.now())
+      if (isNaN(d.getTime())) return
       const key = `${d.getFullYear()}-W${getWeekNumber(d)}`
       if (!groups[key]) groups[key] = []
       groups[key].push(memo)
@@ -233,24 +239,26 @@ export function MemoTimeline({
               />
               
               {showBacklinks && backlinkSuggestions.length > 0 && (
-                <div ref={backlinkRef} className="absolute bottom-full left-0 mb-2 w-full bg-card border border-border shadow-xl rounded-xl p-2 z-50">
+                <div ref={backlinkRef} className="absolute top-full left-0 mt-2 w-full bg-card border border-border shadow-2xl rounded-xl p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                    <div className="px-2 py-1 mb-2 flex items-center justify-between border-b border-border/50">
                      <span className="text-xs font-semibold text-muted-foreground">Link a task</span>
                      <kbd className="text-[10px] px-1.5 bg-muted rounded border border-border/50 font-mono">TAB</kbd>
                    </div>
-                   {backlinkSuggestions.map((card, i) => (
-                     <button 
-                       key={card.id} 
-                       onClick={() => insertBacklink(card.title)} 
-                       onMouseEnter={() => setActiveSuggestionIndex(i)}
-                       className={cn(
-                         "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors truncate",
-                         activeSuggestionIndex === i ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted"
-                       )}
-                     >
-                       {card.title}
-                     </button>
-                   ))}
+                   <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                     {backlinkSuggestions.map((card, i) => (
+                       <button 
+                         key={card.id} 
+                         onClick={() => insertBacklink(card.title)} 
+                         onMouseEnter={() => setActiveSuggestionIndex(i)}
+                         className={cn(
+                           "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors truncate mb-1 last:mb-0",
+                           activeSuggestionIndex === i ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted"
+                         )}
+                       >
+                         {card.title}
+                       </button>
+                     ))}
+                   </div>
                 </div>
               )}
 
@@ -336,10 +344,13 @@ function groupMemosByDay(memos: any[]) {
   const groups: Record<string, any[]> = {}
   memos.forEach(m => {
     if (!m || !m.created_at) return
-    const d = new Date(m.created_at)
-    const key = d.toISOString().split('T')[0]
-    if (!groups[key]) groups[key] = []
-    groups[key].push(m)
+    try {
+      const d = new Date(m.created_at)
+      if (isNaN(d.getTime())) return
+      const key = d.toISOString().split('T')[0]
+      if (!groups[key]) groups[key] = []
+      groups[key].push(m)
+    } catch(e) { console.error("Date parse error", e) }
   })
   return Object.entries(groups).map(([dateKey, items]) => {
     const d = new Date(dateKey)
