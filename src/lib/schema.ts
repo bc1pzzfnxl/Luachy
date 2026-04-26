@@ -17,8 +17,8 @@ export const cards = pgTable('cards', {
   action_type: text('action_type'),
   priority: integer('priority').default(4),
   due_date: timestamp('due_date'),
-  recurrence: text('recurrence'), // null, 'daily', 'weekly'
-  archived: integer('archived').default(0), // 0 or 1
+  recurrence: text('recurrence'),
+  archived: integer('archived').default(0),
   reminded: integer('reminded').default(0),
   created_at: timestamp('created_at'),
 });
@@ -38,6 +38,23 @@ export const attachments = pgTable('attachments', {
   filename: text('filename').notNull(),
   type: text('type'),
   created_at: timestamp('created_at'),
+});
+
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  hashed_password: text('hashed_password').notNull(),
+});
+
+export const sessions = pgTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp('expires_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).notNull(),
 });
 
 export const cardsRelations = relations(cards, ({ one }) => ({

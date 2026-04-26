@@ -16,14 +16,16 @@ import { ArchiveView } from './components/archive/ArchiveView'
 import { DailyFocus } from './components/focus/DailyFocus'
 import { SearchOverlay } from './components/ui/SearchOverlay'
 import { StatsView } from './components/stats/StatsView'
+import { LoginView } from './components/auth/LoginView'
 
 export default function App() {
   const luachy = useLuachy()
   const { 
     memos = [], cards = [], columns = [], stats = {}, kanbanStats = null,
-    loading = false, addMemo, updateMemo, deleteMemo, searchMemos,
+    loading = false, user = null, authChecked = false,
+    addMemo, updateMemo, deleteMemo, searchMemos,
     addCard, updateCard, moveCard, deleteCard, archiveCard, cleanupCards,
-    uploadFile
+    uploadFile, logout, login
   } = luachy
 
   const [activeView, setActiveView] = useState<ViewType>('focus')
@@ -113,6 +115,12 @@ export default function App() {
         document.documentElement.classList.remove('theme-transitioning')
       }, 800)
     }
+  }
+
+  if (!authChecked) return null // Or a loading spinner
+
+  if (!user) {
+    return <LoginView onLoginSuccess={login} />
   }
 
   return (
@@ -209,6 +217,7 @@ export default function App() {
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           onRunArchive={cleanupCards}
+          onLogout={logout}
         />
 
         <SearchOverlay 

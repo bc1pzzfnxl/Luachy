@@ -10,6 +10,8 @@ export function useLuachy() {
   const [stats, setStats] = useState<Record<string, number>>({})
   const [kanbanStats, setKanbanStats] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<{ username: string } | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const { toast } = useToast()
 
   const safeJson = async (res: Response) => {
@@ -20,6 +22,18 @@ export function useLuachy() {
       return null
     }
   }
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/me`)
+      const data = await res.json()
+      setUser(data.user)
+    } catch (e) {
+      setUser(null)
+    } finally {
+      setAuthChecked(true)
+    }
+  }, [])
 
   const fetchData = useCallback(async () => {
     try {
@@ -83,8 +97,32 @@ export function useLuachy() {
   }, [])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    checkAuth()
+  }, [checkAuth])
+
+  useEffect(() => {
+    if (authChecked && user) {
+      fetchData()
+    }
+  }, [authChecked, user, fetchData])
+
+  const logout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, { method: 'POST' })
+      setUser(null)
+      setMemos([])
+      setCards([])
+      setColumns([])
+      toast("Signed out", "info")
+    } catch (e) {
+      toast("Logout failed", "error")
+    }
+  }
+
+  const login = (userData: { username: string }) => {
+    setUser(userData)
+    // useEffect will handle fetchData
+  }
 
   const addMemo = async (content: string, images?: string[]) => {
     setLoading(true)
@@ -257,6 +295,7 @@ export function useLuachy() {
 
   return { 
     memos, cards, columns, stats, kanbanStats, loading, 
+    user, authChecked, login, logout,
     addMemo, updateMemo, deleteMemo, archiveMemo, searchMemos,
     addCard, updateCard, moveCard, deleteCard, archiveCard, cleanupCards,
     uploadFile, refresh: fetchData 

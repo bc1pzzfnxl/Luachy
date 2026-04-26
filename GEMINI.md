@@ -53,6 +53,7 @@ docker-compose up -d db
 Copy `.env.example` to `.env`.
 
 **3. DB Schema:**
+*Note: Uncomment `ports` in `docker-compose.yml` for DB service to run push locally.*
 ```bash
 bun run drizzle-kit generate
 bun run drizzle-kit push

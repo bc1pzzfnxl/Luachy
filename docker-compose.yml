@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgrespassword}
       POSTGRES_DB: ${DB_NAME:-luachy}
+    # ports:
+    #   - "5432:5432" # Uncomment to run drizzle-kit push locally
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:

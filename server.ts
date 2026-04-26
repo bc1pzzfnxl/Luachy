@@ -3,6 +3,8 @@ import * as schema from './src/lib/schema';
 import { eq, desc, asc, and, like, sql } from 'drizzle-orm';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import { lucia } from "./src/lib/auth";
+import { nanoid } from "nanoid";
 
 console.log("\n-----------------------------------------");
 console.log("LUACHY MINIMALIST SERVER STARTING...");
@@ -26,20 +28,92 @@ const server = Bun.serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
+    const origin = req.headers.get("Origin") || "*";
+    
     const headers = {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Credentials": "true",
     };
 
     if (req.method === "OPTIONS") return new Response(null, { headers });
 
-    // --- STATIC ASSETS ---
+    // --- AUTH UTILS ---
+    let session = null;
+    let user = null;
+    try {
+      const sessionId = lucia.readSessionCookie(req.headers.get("Cookie") ?? "");
+      if (sessionId) {
+        const result = await lucia.validateSession(sessionId);
+        session = result.session;
+        user = result.user;
+      }
+    } catch (e: any) {
+      console.error("[AUTH ERROR] Session validation failed:", e.message);
+    }
+
+    // --- STATIC ASSETS (Protected if needed, keeping public for now) ---
     if (url.pathname.startsWith("/assets/")) {
       const filename = url.pathname.replace("/assets/", "");
       const file = Bun.file(join(ASSETS_DIR, filename));
       if (await file.exists()) return new Response(file);
       return new Response("Not Found", { status: 404 });
+    }
+
+    // --- AUTH ROUTES ---
+    if (url.pathname === "/api/auth/login" && req.method === "POST") {
+      try {
+        const { username, password } = await req.json();
+        const users_table = schema.users;
+        const existingUser = await db.select().from(users_table).where(eq(users_table.username, username)).limit(1);
+        
+        if (!existingUser[0]) {
+          return Response.json({ error: "Invalid credentials" }, { status: 400, headers });
+        }
+
+        const validPassword = await Bun.password.verify(password, existingUser[0].hashed_password);
+        if (!validPassword) {
+          return Response.json({ error: "Invalid credentials" }, { status: 400, headers });
+        }
+
+        const session = await lucia.createSession(existingUser[0].id, {});
+        const cookie = lucia.createSessionCookie(session.id);
+        
+        return new Response(JSON.stringify({ success: true, user: { username: existingUser[0].username } }), {
+          headers: {
+            ...headers,
+            "Set-Cookie": cookie.serialize()
+          }
+        });
+      } catch (err: any) { 
+        console.error("[LOGIN ERROR] Detail:", err);
+        return Response.json({ error: `Database Error: ${err.message}` }, { status: 400, headers }); 
+      }
+    }
+
+    if (url.pathname === "/api/auth/logout" && req.method === "POST") {
+      if (!session) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+      await lucia.invalidateSession(session.id);
+      const cookie = lucia.createBlankSessionCookie();
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          ...headers,
+          "Set-Cookie": cookie.serialize()
+        }
+      });
+    }
+
+    if (url.pathname === "/api/auth/me" && req.method === "GET") {
+      if (!user) return Response.json({ user: null }, { headers });
+      return Response.json({ user: { username: user.username } }, { headers });
+    }
+
+    // --- PROTECTED ROUTES MIDDLEWARE ---
+    if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/auth/")) {
+      if (!session) {
+        return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+      }
     }
 
     // --- UPLOAD ---

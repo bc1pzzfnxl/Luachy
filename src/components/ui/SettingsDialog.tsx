@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { 
-  Settings, Download, Upload
+  Settings, Download, Upload, LogOut, ShieldCheck
 } from 'lucide-react'
 import { useToast } from './ToastProvider'
 import {
@@ -23,9 +23,10 @@ interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
   onRunArchive: () => void
+  onLogout?: () => void
 }
 
-export function SettingsDialog({ isOpen, onClose, onRunArchive }: SettingsDialogProps) {
+export function SettingsDialog({ isOpen, onClose, onRunArchive, onLogout }: SettingsDialogProps) {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -77,6 +78,7 @@ export function SettingsDialog({ isOpen, onClose, onRunArchive }: SettingsDialog
           <div className="px-6 border-b bg-muted/20">
             <TabsList className="h-12 w-full justify-start bg-transparent gap-6 p-0">
               <TabsTrigger value="data" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2 text-xs font-bold uppercase tracking-widest transition-all">Data & Safety</TabsTrigger>
+              <TabsTrigger value="security" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2 text-xs font-bold uppercase tracking-widest transition-all">Security</TabsTrigger>
             </TabsList>
           </div>
 
@@ -123,6 +125,37 @@ export function SettingsDialog({ isOpen, onClose, onRunArchive }: SettingsDialog
                       </Button>
                     </div>
                   </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="security" className="h-full m-0 focus-visible:ring-0">
+              <ScrollArea className="h-full">
+                <div className="p-8 max-w-lg mx-auto flex flex-col gap-10">
+                   <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-3">
+                         <ShieldCheck size={16} className="text-muted-foreground" />
+                         <h4 className="text-sm font-semibold text-foreground">Workspace Access</h4>
+                         <div className="h-px bg-border flex-1" />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed text-center py-2">
+                          Your workspace is locked using credentials defined in your environment file. 
+                          Signing out will clear your local session.
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          onClick={onLogout}
+                          className="w-full justify-start gap-3 h-14 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 border-border/50"
+                        >
+                          <LogOut size={18} />
+                          <div className="flex flex-col items-start text-left">
+                            <span className="font-bold text-xs uppercase tracking-widest">Sign Out</span>
+                            <span className="text-[10px] opacity-60">End current session</span>
+                          </div>
+                        </Button>
+                      </div>
+                   </div>
                 </div>
               </ScrollArea>
             </TabsContent>
