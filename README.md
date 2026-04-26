@@ -47,6 +47,9 @@ Access dashboard at `http://localhost`.
 
 To modify Luachy or run without Docker (except DB):
 
+> [!IMPORTANT]
+> For `drizzle-kit push` to work, you must uncomment the `ports` section in `docker-compose.yml` to expose the database (5432) to your local machine.
+
 ```bash
 # 1. Start the database
 docker-compose up -d db
@@ -70,6 +73,9 @@ bun run server.ts # Backend (API)
 | `DB_USER` | PostgreSQL user | `postgres` |
 | `DB_PASSWORD` | PostgreSQL password | `postgrespassword` |
 | `DB_NAME` | PostgreSQL database name | `luachy` |
+| `LUACHY_USER` | Workspace admin username | `admin` |
+| `LUACHY_PASSWORD` | Workspace admin password | `password123` |
+| `SECURE_COOKIES` | Enable secure cookies (HTTPS) | `false` |
 | `NODE_ENV` | Environment mode | `production` |
 
 ## 🏗 Tech Stack
