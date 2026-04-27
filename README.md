@@ -10,7 +10,7 @@
   [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](./docker-compose.yml)
   [![Bun](https://img.shields.io/badge/Runtime-Bun-black.svg)](https://bun.sh)
 
-  [Features](#-features) • [Deployment](#-self-hosting) • [Development](#-local-development) • [Tech Stack](#-tech-stack)
+  [Features](#-features) • [Deployment](#-self-hosting) • [Data Migration](#-data-migration) • [Development](#-local-development) • [Tech Stack](#-tech-stack)
 </div>
 
 ---
@@ -27,21 +27,42 @@
 - **⚡️ Daily Focus:** A high-performance dashboard with a 7-day Momentum activity heatmap.
 - **📅 Sidebar Calendar:** Fixed-width density view to track deadlines without layout shift.
 - **🔍 Search Overlay:** Global `Cmd+K` fuzzy search across all notes and tasks.
+- **🔐 Secure Auth:** Powered by [Lucia Auth](https://lucia-auth.com) with environment-based admin synchronization.
 - **🌓 OLED Minimal:** Warm monochrome theme designed for deep focus and OLED screens.
 
 ## 🐳 Self-Hosting
 
-Fastest way to get Luachy running is using Docker.
+The fastest way to get Luachy running is using Docker.
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/bc1pzzfnxl/Luachy.git
 cd Luachy
 
-# 2. Launch with Docker Compose
+# 2. Configure your environment
+cp .env.example .env
+# Edit .env with your credentials
+
+# 3. Launch with Docker Compose
 docker-compose up -d --build
 ```
-Access dashboard at `http://localhost`.
+Access dashboard at `http://localhost:82` (or your configured port).
+
+## 📤 Data Migration
+
+If you have a `backup.sql` file from a previous installation, follow these steps to import your data into the Docker container:
+
+```bash
+# 1. Ensure the schema is up to date (run from host)
+# Requires ports: "5432:5432" to be temporary uncommented in docker-compose.yml
+bun run drizzle-kit push
+
+# 2. Copy the backup to the DB container
+docker cp backup.sql luachy-db-1:/tmp/backup.sql
+
+# 3. Execute the import
+docker exec -it luachy-db-1 psql -U postgres -d luachy -f /tmp/backup.sql
+```
 
 ## 🛠 Local Development
 
@@ -58,7 +79,6 @@ docker-compose up -d db
 bun install
 
 # 3. Setup database schema
-bun run drizzle-kit generate
 bun run drizzle-kit push
 
 # 4. Run development servers
@@ -82,11 +102,11 @@ bun run server.ts # Backend (API)
 
 - **Runtime:** [Bun](https://bun.sh)
 - **Frontend:** [React 19](https://react.dev) + [Vite](https://vitejs.dev)
-- **Database:** [PostgreSQL](https://www.postgresql.org)
+- **Database:** [PostgreSQL 15](https://www.postgresql.org)
+- **Authentication:** [Lucia Auth](https://lucia-auth.com)
 - **ORM:** [Drizzle ORM](https://orm.drizzle.team)
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com) + [Geist Sans/Mono](https://vercel.com/font)
 - **UI Components:** [shadcn/ui](https://ui.shadcn.com)
-- **Icons:** [Lucide React](https://lucide.dev)
 
 ## 📄 License
 
