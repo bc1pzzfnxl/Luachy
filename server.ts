@@ -39,6 +39,11 @@ const server = Bun.serve({
 
     if (req.method === "OPTIONS") return new Response(null, { headers });
 
+    // --- HEALTH CHECK ---
+    if (url.pathname === "/api/health") {
+      return Response.json({ status: "ok" }, { headers });
+    }
+
     // --- AUTH UTILS ---
     let session = null;
     let user = null;
