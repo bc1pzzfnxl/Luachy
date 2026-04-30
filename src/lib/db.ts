@@ -25,20 +25,27 @@ export const initDb = async () => {
     const adminUser = process.env.LUACHY_USER || 'admin';
     const adminPass = process.env.LUACHY_PASSWORD || 'password123';
     
-    const existing = await db.select().from(schema.users).where(eq(schema.users.username, adminUser)).limit(1);
+    // Check by fixed ID 'owner' instead of username to allow username updates
+    const existing = await db.select().from(schema.users).where(eq(schema.users.id, 'owner')).limit(1);
     const hashed = await Bun.password.hash(adminPass);
 
     if (existing.length === 0) {
-      // Create owner
-      await db.insert(schema.users).values({
-        id: 'owner',
-        username: adminUser,
-        hashed_password: hashed
-      });
-      console.log(`[AUTH] Admin user '${adminUser}' created from .env`);
+      // Create owner if not exists (check username uniqueness just in case)
+      const nameCheck = await db.select().from(schema.users).where(eq(schema.users.username, adminUser)).limit(1);
+      if (nameCheck.length === 0) {
+        await db.insert(schema.users).values({
+          id: 'owner',
+          username: adminUser,
+          hashed_password: hashed
+        });
+        console.log(`[AUTH] Admin user '${adminUser}' created from .env`);
+      }
     } else {
-      // Update password if changed in .env
-      await db.update(schema.users).set({ hashed_password: hashed }).where(eq(schema.users.id, 'owner'));
+      // Sync both username and password from .env to the 'owner' record
+      await db.update(schema.users).set({ 
+        username: adminUser,
+        hashed_password: hashed 
+      }).where(eq(schema.users.id, 'owner'));
       console.log(`[AUTH] Admin user '${adminUser}' synchronized`);
     }
   } catch (e: any) {
